@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEO Gender Analyzer - Debug Version</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #007bff;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .gender-male { color: #007bff; font-weight: bold; }
+        .gender-female { color: #dc3545; font-weight: bold; }
+        .gender-unknown { color: #6c757d; font-weight: bold; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        .status-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .status-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .status-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #007bff;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .debug {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 CEO Gender Analyzer - Debug Version</h1>
+        
+        <div class="form-group">
+            <label for="apiProvider">API Provider:</label>
+            <select id="apiProvider">
+                <option value="genderize">Genderize.io (Free - No API key needed)</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="perplexity">Perplexity AI</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="apiKey">API Key (only for OpenRouter/Perplexity):</label>
+            <input type="password" id="apiKey" placeholder="Leave empty for Genderize.io">
+        </div>
+
+        <div class="form-group">
+            <label for="nameInput">CEO Names (one per line):</label>
+            <textarea id="nameInput" rows="8" placeholder="Enter names here, one per line:&#10;Anna Bauer&#10;Alexander Dukov&#10;John Smith&#10;Maria Garcia"></textarea>
+        </div>
+
+        <button onclick="testFunction()">🧪 Test Button</button>
+        <button onclick="loadSample()">📋 Load Sample</button>
+        <button onclick="startAnalysis()" id="analyzeBtn">🚀 Start Analysis</button>
+
+        <div id="status" class="status"></div>
+        <div id="debug" class="debug" style="display: none;"></div>
+        
+        <div class="progress" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="results" id="results">
+            <h2>📊 Results</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCount">0</div>
+                    <div>Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="maleCount">0</div>
+                    <div>Male</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="femaleCount">0</div>
+                    <div>Female</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="unknownCount">0</div>
+                    <div>Unknown</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>First Name</th>
+                        <th>Gender</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
+            
+            <button onclick="downloadResults()">💾 Download CSV</button>
+        </div>
+    </div>
+
+    <script>
+        console.log('Script loaded successfully');
+        
+        let analysisResults = [];
+        let isAnalyzing = false;
+
+        function debugLog(message) {
+            console.log(message);
+            const debugDiv = document.getElementById('debug');
+            debugDiv.style.display = 'block';
+            debugDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+        }
+
+        function showStatus(message, type = 'info') {
+            debugLog(`Status: ${message} (${type})`);
+            const status = document.getElementById('status');
+            status.className = `status status-${type}`;
+            status.textContent = message;
+            status.style.display = 'block';
+        }
+
+        function hideStatus() {
+            document.getElementById('status').style.display = 'none';
+        }
+
+        function updateProgress(current, total) {
+            const container = document.getElementById('progressContainer');
+            const bar = document.getElementById('progressBar');
+            
+            if (total > 0) {
+                container.style.display = 'block';
+                const percentage = (current / total) * 100;
+                bar.style.width = percentage + '%';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function testFunction() {
+            debugLog('Test function called - JavaScript is working!');
+            showStatus('Test successful! JavaScript is working.', 'success');
+        }
+
+        function loadSample() {
+            debugLog('Loading sample data');
+            const sampleNames = `Anna Bauer
+Alexander Dukov
+John Smith
+Maria Garcia
+Sarah Johnson
+Michael Chen
+Lisa Anderson`;
+            document.getElementById('nameInput').value = sampleNames;
+            showStatus('Sample data loaded!', 'success');
+        }
+
+        async function startAnalysis() {
+            if (isAnalyzing) {
+                showStatus('Analysis already in progress...', 'info');
+                return;
+            }
+
+            debugLog('Starting analysis function');
+            isAnalyzing = true;
+            
+            try {
+                // Disable button
+                document.getElementById('analyzeBtn').disabled = true;
+                document.getElementById('analyzeBtn').textContent = 'Analyzing...';
+                
+                hideStatus();
+                analysisResults = [];
+                
+                // Get names
+                const textInput = document.getElementById('nameInput').value.trim();
+                if (!textInput) {
+                    showStatus('Please enter some names to analyze', 'error');
+                    return;
+                }
+
+                const names = textInput.split('\n')
+                    .map(name => name.trim())
+                    .filter(name => name.length > 0);
+
+                if (names.length === 0) {
+                    showStatus('No valid names found', 'error');
+                    return;
+                }
+
+                debugLog(`Found ${names.length} names to analyze`);
+                showStatus(`Starting analysis of ${names.length} names...`, 'info');
+
+                // Get API settings
+                const apiProvider = document.getElementById('apiProvider').value;
+                const apiKey = document.getElementById('apiKey').value.trim();
+
+                debugLog(`Using API provider: ${apiProvider}`);
+
+                if (apiProvider !== 'genderize' && !apiKey) {
+                    showStatus('Please enter your API key for ' + apiProvider, 'error');
+                    return;
+                }
+
+                // Process each name
+                for (let i = 0; i < names.length; i++) {
+                    const name = names[i];
+                    debugLog(`Processing name ${i + 1}/${names.length}: ${name}`);
+                    
+                    updateProgress(i, names.length);
+                    showStatus(`Processing: ${name} (${i + 1}/${names.length})`, 'info');
+                    
+                    try {
+                        const result = await predictGender(name, apiProvider, apiKey);
+                        analysisResults.push({
+                            name: name,
+                            firstName: name.split(' ')[0],
+                            gender: result.gender,
+                            confidence: result.confidence
+                        });
+                        debugLog(`Result for ${name}: ${result.gender} (${result.confidence}%)`);
+                    } catch (error) {
+                        debugLog(`Error for ${name}: ${error.message}`);
+                        analysisResults.push({
+                            name: name,
+                            firstName: name.split(' ')[0],
+                            gender: 'unknown',
+                            confidence: 0,
+                            error: error.message
+                        });
+                    }
+                    
+                    // Rate limiting - wait 500ms between requests
+                    if (i < names.length - 1) {
+                        await sleep(500);
+                    }
+                }
+                
+                updateProgress(names.length, names.length);
+                displayResults();
+                showStatus(`Analysis complete! Processed ${names.length} names.`, 'success');
+                
+            } catch (error) {
+                debugLog(`Analysis error: ${error.message}`);
+                showStatus(`Analysis failed: ${error.message}`, 'error');
+            } finally {
+                isAnalyzing = false;
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('analyzeBtn').textContent = '🚀 Start Analysis';
+            }
+        }
+
+        async function predictGender(fullName, provider, apiKey) {
+            const firstName = fullName.split(' ')[0].trim();
+            debugLog(`Predicting gender for: ${firstName} using ${provider}`);
+            
+            switch (provider) {
+                case 'genderize':
+                    return await predictWithGenderize(firstName);
+                case 'openrouter':
+                    return await predictWithOpenRouter(firstName, apiKey);
+                case 'perplexity':
+                    return await predictWithPerplexity(firstName, apiKey);
+                default:
+                    throw new Error('Unknown API provider: ' + provider);
+            }
+        }
+
+        async function predictWithGenderize(firstName) {
+            debugLog(`Calling Genderize API for: ${firstName}`);
+            
+            const url = `https://api.genderize.io?name=${encodeURIComponent(firstName)}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Genderize API error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            debugLog(`Genderize response: ${JSON.stringify(data)}`);
+            
+            return {
+                gender: data.gender || 'unknown',
+                confidence: Math.round((data.probability || 0) * 100)
+            };
+        }
+
+        async function predictWithOpenRouter(firstName, apiKey) {
+            debugLog(`Calling OpenRouter API for: ${firstName}`);
+            
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'HTTP-Referer': window.location.origin
+                },
+                body: JSON.stringify({
+                    model: 'anthropic/claude-3.5-sonnet',
+                    messages: [{
+                        role: 'user',
+                        content: `What is the most likely gender for the first name "${firstName}"? Respond with only: male, female, or unknown`
+                    }],
+                    temperature: 0,
+                    max_tokens: 10
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            const content = data.choices[0].message.content.toLowerCase().trim();
+            
+            let gender = 'unknown';
+            let confidence = 70;
+            
+            if (content.includes('male') && !content.includes('female')) {
+                gender = 'male';
+            } else if (content.includes('female')) {
+                gender = 'female';
+            }
+            
+            debugLog(`OpenRouter response: ${content} -> ${gender}`);
+            
+            return { gender, confidence };
+        }
+
+        async function predictWithPerplexity(firstName, apiKey) {
+            debugLog(`Calling Perplexity API for: ${firstName}`);
+            
+            const response = await fetch('https://api.perplexity.ai/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.1-sonar-large-128k-online',
+                    messages: [{
+                        role: 'user',
+                        content: `What is the most likely gender for the first name "${firstName}"? Respond with only: male, female, or unknown`
+                    }],
+                    temperature: 0,
+                    max_tokens: 10
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            const content = data.choices[0].message.content.toLowerCase().trim();
+            
+            let gender = 'unknown';
+            let confidence = 70;
+            
+            if (content.includes('male') && !content.includes('female')) {
+                gender = 'male';
+            } else if (content.includes('female')) {
+                gender = 'female';
+            }
+            
+            debugLog(`Perplexity response: ${content} -> ${gender}`);
+            
+            return { gender, confidence };
+        }
+
+        function displayResults() {
+            debugLog('Displaying results');
+            
+            // Calculate stats
+            const total = analysisResults.length;
+            const male = analysisResults.filter(r => r.gender === 'male').length;
+            const female = analysisResults.filter(r => r.gender === 'female').length;
+            const unknown = total - male - female;
+
+            // Update stats
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('maleCount').textContent = male;
+            document.getElementById('femaleCount').textContent = female;
+            document.getElementById('unknownCount').textContent = unknown;
+
+            // Update table
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            analysisResults.forEach(result => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${result.name}</td>
+                    <td>${result.firstName}</td>
+                    <td class="gender-${result.gender}">${result.gender.toUpperCase()}</td>
+                    <td>${result.confidence}%</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function downloadResults() {
+            debugLog('Downloading results');
+            
+            let csv = 'Name,First Name,Gender,Confidence\n';
+            analysisResults.forEach(result => {
+                csv += `"${result.name}","${result.firstName}","${result.gender}",${result.confidence}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'ceo_gender_analysis.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Test on page load
+        window.addEventListener('load', function() {
+            debugLog('Page loaded successfully');
+            showStatus('App loaded successfully! Click "Test Button" to verify functionality.', 'success');
+        });
+    </script>
+</body>
+</html>
