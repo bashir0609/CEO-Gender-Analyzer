@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEO Gender Analyzer - Professional Edition</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="ceo-analyzer-styles.css">
+    <!-- External JS -->
+    <script src="ceo-analyzer-main.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔍 CEO Gender Analyzer</h1>
+            <p>Advanced AI-powered gender analysis for executive leadership data</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- JavaScript Test Section -->
+            <div class="section">
+                <h3 class="section-title">🧪 System Test</h3>
+                <div class="card">
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="testJS()">Test JavaScript</button>
+                        <button class="btn btn-warning" onclick="clearLog()">Clear Log</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Configuration -->
+            <div class="section">
+                <h3 class="section-title">⚙️ API Configuration</h3>
+                <div class="card api-config">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="apiProvider">API Provider:</label>
+                            <select id="apiProvider" class="form-select">
+                                <option value="simple">Simple Rule-Based (No API needed)</option>
+                                <option value="genderize">Genderize.io (Free - No API key needed)</option>
+                                <option value="openrouter">OpenRouter (Requires API key)</option>
+                                <option value="perplexity">Perplexity AI (Requires API key)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="apiKey">API Key:</label>
+                            <input type="password" id="apiKey" class="form-input" placeholder="Enter your API key (leave empty for Genderize/Simple)">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="model">Model (for OpenRouter):</label>
+                        <select id="model" class="form-select">
+                            <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                            <option value="openai/gpt-4o">GPT-4o</option>
+                            <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Upload Section -->
+            <div class="section">
+                <h3 class="section-title">📁 Data Input</h3>
+                <div class="card upload-card" onclick="document.getElementById('fileInput').click()">
+                    <div style="font-size: 3rem; margin-bottom: 16px;">📄</div>
+                    <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 8px;">Upload CSV or Excel File</div>
+                    <div style="color: var(--text-secondary);">Supports .csv, .xlsx, .xls files with CEO names</div>
+                    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display: none;">
+                    <div class="btn-group" style="margin-top: 16px;">
+                        <button class="btn btn-success" onclick="event.stopPropagation(); loadFromFile()">📁 Load File</button>
+                        <button class="btn btn-secondary" onclick="event.stopPropagation(); loadSampleCSV()">📋 Load Sample</button>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top: 20px;">
+                    <div class="form-group">
+                        <label class="form-label" for="names">Manual Entry (one name per line):</label>
+                        <textarea id="names" class="form-textarea" placeholder="Enter CEO names here, one per line:&#10;John Smith&#10;Maria Garcia&#10;Alexander Wang">John Smith
+Maria Garcia  
+Alexander Wang</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Controls -->
+            <div class="section">
+                <h3 class="section-title">🚀 Analysis</h3>
+                <div class="card text-center">
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="startAnalysis()" id="startBtn">
+                            🚀 Start Analysis
+                        </button>
+                        <button class="btn btn-danger" onclick="stopAnalysis()" id="stopBtn" style="display: none;">
+                            ⏹️ Stop Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status and Debug -->
+            <div id="status" class="status"></div>
+            <div id="debug" class="debug" style="display: none;"></div>
+            
+            <!-- Progress Bar -->
+            <div class="progress" id="progressContainer" style="display: none;">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results" id="results">
+                <div class="section">
+                    <h3 class="section-title">📊 Analysis Results</h3>
+                    
+                    <!-- Statistics Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalCount">0</div>
+                            <div class="stat-label">Total CEOs</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="maleCount">0</div>
+                            <div class="stat-label">Male</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="femaleCount">0</div>
+                            <div class="stat-label">Female</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="unknownCount">0</div>
+                            <div class="stat-label">Unknown</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Results Table -->
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Full Name</th>
+                                    <th>First Name</th>
+                                    <th>Gender</th>
+                                    <th>Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTable"></tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Download Options -->
+                    <div class="card" style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 16px;">💾 Download Results</h4>
+                        <div class="btn-group">
+                            <button class="btn btn-success" onclick="downloadCSV()">💾 Download CSV</button>
+                            <button class="btn btn-secondary" onclick="downloadExcel()">📊 Download Excel</button>
+                            <button class="btn btn-warning" onclick="copyResults()">📋 Copy to Clipboard</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Re-analysis Options -->
+                    <div class="card reanalyze-card" style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 16px;">🔄 Re-analyze Uncertain Results</h4>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="reanalyzeUnknown" checked>
+                                <label>Unknown gender</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="reanalyzeLowConfidence" checked>
+                                <label>Low confidence (&lt; 70%)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="reanalyzeErrors">
+                                <label>Errors during processing</label>
+                            </div>
+                        </div>
+                        
+                        <div class="grid-2" style="margin: 16px 0;">
+                            <div class="form-group">
+                                <label class="form-label">Using different API:</label>
+                                <select id="reanalyzeProvider" class="form-select">
+                                    <option value="genderize">Genderize.io (Free)</option>
+                                    <option value="openrouter">OpenRouter (Better accuracy)</option>
+                                    <option value="perplexity">Perplexity AI</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">API Key (if needed):</label>
+                                <input type="password" id="reanalyzeApiKey" class="form-input" placeholder="API key for re-analysis">
+                            </div>
+                        </div>
+                        
+                        <div class="btn-group">
+                            <button class="btn btn-danger" onclick="startReanalysis()" id="reanalyzeBtn">
+                                🔄 Re-analyze Selected
+                            </button>
+                        </div>
+                        <div class="count-indicator" id="reanalyzeCount"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
